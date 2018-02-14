@@ -5,19 +5,32 @@ import "github.com/ryanbmilbourne/enigma"
 
 func main() {
 	settings := enigma.Settings{
-		Rotors: [3]int{enigma.Type1, enigma.Type2, enigma.Type3},
+		RotorTypes:  [3]int{enigma.Type1, enigma.Type2, enigma.Type3},
+		RingOffsets: [3]byte{'a', 'a', 'a'},
+		RotorInits:  [3]byte{'a', 'a', 'a'},
 	}
+
 	theMachine := enigma.NewMachine(settings)
 
-	for _, b := range []byte("hello") {
+	//inputText := enigma.Smash("Hello")
+	inputText := enigma.Smash("YQNNW")
+
+	outputText := make([]byte, 0, len(inputText))
+
+	for _, b := range inputText {
 		out, err := theMachine.Map(b)
 		if err != nil {
 			out = '.'
 		}
-		fmt.Printf(
-			"%s -> %s\n",
-			string(b),
-			string(out),
-		)
+		outputText = append(outputText, out)
 	}
+	//for i, out := range outputText {
+	//	fmt.Printf(
+	//		"\n%s -> %s",
+	//		string(inputText[i]),
+	//		string(out),
+	//	)
+	//}
+
+	fmt.Printf("%v -> %v\n", string(inputText), string(outputText))
 }

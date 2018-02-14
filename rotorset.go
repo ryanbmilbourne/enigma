@@ -1,118 +1,57 @@
 package enigma
 
+import "fmt"
+
+// RotorSet Represents a set of Rotors that are part of an Enigma machine.
+// Set to represent a Type 1 Enigma (3 Rotors)
 type RotorSet struct {
 	refRotor    Rotor
 	leftRotor   Rotor
 	middleRotor Rotor
 	rightRotor  Rotor
-	echoRotor   Rotor
 
-	InChan   chan byte
-	OutChan  chan byte
-	exitChan chan bool
+	// Here for posterity.  In the real machine, this rotor converts the electrical signal
+	// used by the keyboard/plugboard to the mechanical contact system used by the rotors.
+	// In this application, it has no use.
+	echoRotor Rotor
 }
 
+// NewRotorSet Initializes a new rotor set using the provided initial rotor/ring settings.
 func NewRotorSet(settings Settings) *RotorSet {
 	r := RotorSet{
-		refRotor:    *NewRotor(ReflectorB),
-		leftRotor:   *NewRotor(settings.Rotors[0]),
-		middleRotor: *NewRotor(settings.Rotors[1]),
-		rightRotor:  *NewRotor(settings.Rotors[2]),
-		echoRotor:   *NewRotor(Echo),
-
-		InChan:   make(chan byte, 32),
-		OutChan:  make(chan byte),
-		exitChan: make(chan bool),
+		refRotor:    *NewRotor(ReflectorC, 'a', 'a'), // Reflector rotor does not have ring settings or positionality
+		leftRotor:   *NewRotor(settings.RotorTypes[0], settings.RingOffsets[0], settings.RotorInits[0]),
+		middleRotor: *NewRotor(settings.RotorTypes[1], settings.RingOffsets[1], settings.RotorInits[1]),
+		rightRotor:  *NewRotor(settings.RotorTypes[2], settings.RingOffsets[2], settings.RotorInits[2]),
+		echoRotor:   *NewRotor(Echo, 'a', 'a'),
 	}
-
-	//echoRightBridge := make(chan byte)
-	//echoRightRefBridge := make(chan byte)
-
-	//rightMiddleBridge := make(chan byte)
-	//rightMiddleRefBridge := make(chan byte)
-
-	//middleLeftBridge := make(chan byte)
-	//middleLeftRefBridge := make(chan byte)
-
-	//leftReflectBridge := make(chan byte)
-	//leftReflectRefBridge := make(chan byte)
-
-	//echo.InChan = make(chan byte)
-	//echo.RefOutChan = make(chan byte)
-
-	// Setup the channels
-	//r.echoRotor.OutChan = echoRightBridge
-	//r.echoRotor.RefInChan = echoRightRefBridge
-
-	//r.rightRotor.InChan = echoRightBridge
-	//r.rightRotor.RefOutChan = echoRightRefBridge
-	//r.rightRotor.OutChan = rightMiddleBridge
-	//r.rightRotor.RefInChan = rightMiddleRefBridge
-
-	//r.middleRotor.InChan = rightMiddleBridge
-	//r.middleRotor.RefOutChan = rightMiddleRefBridge
-	//r.middleRotor.OutChan = middleLeftBridge
-	//r.middleRotor.RefInChan = middleLeftRefBridge
-
-	//r.leftRotor.InChan = middleLeftBridge
-	//r.leftRotor.RefOutChan = middleLeftRefBridge
-	//r.leftRotor.OutChan = leftReflectBridge
-	//r.leftRotor.RefInChan = leftReflectRefBridge
-
-	//echoWriteChan := r.echoRotor.InChan
-	//echoReadChan := r.echoRotor.RefOutChan
-
-	//r.refRotor.Start()
-	//r.rightRotor.Start()
-	//r.middleRotor.Start()
-	//r.leftRotor.Start()
-	//r.echoRotor.Start()
-
-	//go func() {
-	//	for {
-	//		select {
-	//		case inByte := <-r.InChan:
-	//			// First Pass
-	//			val := r.rightRotor.Enc(inByte)
-	//			val = r.middleRotor.Enc(val)
-	//			val = r.leftRotor.Enc(val)
-	//			val = r.refRotor.Enc(val)
-
-	//			// On the flip-side.
-	//			val = r.leftRotor.Dec(val)
-	//			val = r.middleRotor.Dec(val)
-	//			val = r.rightRotor.Dec(val)
-
-	//			r.OutChan <- val
-	//		case <-r.exitChan:
-	//			r.refRotor.Exit()
-	//			r.leftRotor.Exit()
-	//			r.middleRotor.Exit()
-	//			r.rightRotor.Exit()
-	//			r.echoRotor.Exit()
-
-	//			return
-	//		}
-	//	}
-	//}()
 
 	return &r
 }
 
-func (r *RotorSet) Exit() {
-	r.exitChan <- true
-}
-
+// Map Passes a letter through the rotor set
 func (r *RotorSet) Map(inByte byte) byte {
+	// TODO: Rototate the rotor wheels
+
 	// First Pass
+	fmt.Println("RIGHT")
 	val := r.rightRotor.Enc(inByte)
+	fmt.Println("MIDDLE")
 	val = r.middleRotor.Enc(val)
+	fmt.Println("LEFT")
 	val = r.leftRotor.Enc(val)
+	fmt.Println("REFLECT")
 	val = r.refRotor.Enc(val)
 
+	fmt.Println("-------------------------------")
+
 	// On the flip-side.
+	fmt.Println("LEFT")
 	val = r.leftRotor.Dec(val)
+	fmt.Println("MIDDLE")
 	val = r.middleRotor.Dec(val)
+	fmt.Println("RIGHT")
 	val = r.rightRotor.Dec(val)
+	fmt.Println("==========================================")
 	return val
 }

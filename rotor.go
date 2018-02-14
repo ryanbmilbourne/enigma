@@ -11,7 +11,7 @@ const (
 	Echo       = 9
 )
 
-// Each rotor is its own substitution cipher.
+// RotorCiphers contains the substitution cipher for each rotor type
 var RotorCiphers = map[int][]byte{
 	Type1:      []byte("ekmflgdqvzntowyhxuspaibrcj"),
 	Type2:      []byte("ajdksiruxblhwtmcqgznpyfvoe"),
@@ -20,86 +20,120 @@ var RotorCiphers = map[int][]byte{
 	Echo:       []byte(Alphabet),
 }
 
+// Rotor represents an Enigma rotor assembly
 type Rotor struct {
-	Type          int
-	substitutions []byte
-	started       bool
-
-	// Channels for the "input" side
-	InChan  chan byte
-	OutChan chan byte
-	// Channels for the "output" side
-	RefInChan  chan byte
-	RefOutChan chan byte
-	// Goroutine exit chan
-	exitChan  chan bool
-	rExitChan chan bool
+	Type            int
+	substitutions   []byte
+	AlphaRingOffset int
+	Position        byte
 }
 
-func NewRotor(rotorType int) *Rotor {
+// NewRotor initializes a new rotor using the given type (I,II,III, Echo, or Reflector)
+func NewRotor(rotorType int, alphaRingSetting, rotorInitPosition byte) *Rotor {
 	rotor := Rotor{}
 
 	rotor.Type = rotorType
 
-	//rotor.InChan = make(chan byte)
-	//rotor.OutChan = make(chan byte)
-	//rotor.RefInChan = make(chan byte)
-	//rotor.RefOutChan = make(chan byte)
-
-	//rotor.exitChan = make(chan bool)
-	//rotor.rExitChan = make(chan bool)
-
 	rotor.substitutions = RotorCiphers[rotorType]
+
+	rotor.AlphaRingOffset = int(alphaRingSetting - 'a')
+
+	rotor.Position = rotorInitPosition
 
 	return &rotor
 }
 
-func (r *Rotor) Start() {
-	r.started = true
-	// Start the goroutines to parse input to the rotor
-	go func() {
-		for {
-			select {
-			case inByte := <-r.InChan:
-				fmt.Printf("Type %v Rx %v :: ", r.Type, inByte)
-				if r.Type == ReflectorC {
-					r.RefOutChan <- r.Enc(inByte)
-				} else {
-					// Encrypt and output
-					r.OutChan <- r.Enc(inByte)
-				}
-			case <-r.exitChan:
-				return
-			}
-		}
-	}()
+// Accounts for the static ring setting and current position to provide a lookup index
+// for the substitution.
+func (r *Rotor) offsetAndPosPre(inByte byte) int {
+	// Remove the ASCII offest for the ring and rotor math
+	lutIdx := int(inByte - 97)
+	return lutIdx
 
-	if r.Type != ReflectorC {
-		go func() {
-			for {
-				select {
-				case inByte := <-r.RefInChan:
-					// Encrypt and output
-					r.RefOutChan <- r.Dec(inByte)
-				case <-r.rExitChan:
-					return
-				}
-			}
-		}()
+	// Account for the static ring setting
+	lutIdx = lutIdx - r.AlphaRingOffset
+	if lutIdx < 0 {
+		lutIdx = lutIdx + 26
 	}
+	// Now, account for the position of the rotor
+	lutIdx = (lutIdx + (int(r.Position) - 97)) % 26
+
+	return lutIdx
 }
 
-func (r *Rotor) Exit() {
-	r.exitChan <- true
-	if r.Type != ReflectorC {
-		r.rExitChan <- true
+// Re-Accounts for the static ring setting and current position to provide the output byte
+func (r *Rotor) offsetAndPosPost(outByte byte) byte {
+	return outByte
+	// Re-account for the rotor position
+	outByte = outByte - 97
+	outByte = outByte - (r.Position - 97)
+	if outByte < 0 {
+		outByte = outByte + 26
 	}
+
+	// Re-account for the ring setting
+	outByte = (outByte + byte(r.AlphaRingOffset)) % 26
+	outByte = outByte + 97
+	return outByte
 }
 
+// Enc maps a character through the rotor that is directionally headed **towards** the reflector.
 func (r *Rotor) Enc(inByte byte) byte {
-	return inByte
+	fmt.Printf("Type: %v ... ", r.Type)
+	fmt.Printf("In: %v (%v) -> ", inByte, string(inByte))
+
+	// reflectors don't have ring settings or rotor positions
+	if r.Type == ReflectorC {
+		outByte := RotorCiphers[ReflectorC][inByte-97]
+		fmt.Printf("Out: %v (%v)\n", outByte, string(outByte))
+		return outByte
+	}
+
+	// Account for the ring setting and rotor position
+	lutIdx := r.offsetAndPosPre(inByte)
+	fmt.Printf("LutIdx: %v -> ", lutIdx)
+
+	// Do the substitution
+	outByte := RotorCiphers[r.Type][lutIdx]
+	fmt.Printf("OutByte: %v (%v) -> ", outByte, string(outByte))
+
+	// Un-account for the ring setting and rotor position
+	outByte = r.offsetAndPosPost(outByte)
+	fmt.Printf("Out: %v (%v)\n", outByte, string(outByte))
+
+	return outByte
 }
 
+// Dec maps a character through the rotor that is directionally headed **back from** the reflector.
 func (r *Rotor) Dec(inByte byte) byte {
-	return inByte
+	fmt.Printf("Type: %v ... ", r.Type)
+	fmt.Printf("In: %v (%v) -> ", inByte, string(inByte))
+
+	// reflectors don't have ring settings or rotor positions
+	if r.Type == ReflectorC {
+		return 0
+	}
+
+	// Account for the ring setting and rotor position
+	lutIdx := r.offsetAndPosPre(inByte)
+	fmt.Printf("LutIdx: %v -> ", lutIdx)
+
+	// Find the index of that byte in the cipher array
+	foundIdx := 0
+	for i, val := range RotorCiphers[r.Type] {
+		if val == byte(lutIdx+97) {
+			foundIdx = i
+			break
+		}
+	}
+
+	outByte := byte(foundIdx + 97)
+
+	fmt.Printf("OutByte: %v (%v) -> ", outByte, string(outByte))
+
+	// Un-account for the ring setting and rotor position
+	outByte = r.offsetAndPosPost(outByte)
+	fmt.Printf("Out: %v (%v)\n", outByte, string(outByte))
+
+	return outByte
 }
