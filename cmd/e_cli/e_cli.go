@@ -6,14 +6,14 @@ import "github.com/ryanbmilbourne/enigma"
 func main() {
 	settings := enigma.Settings{
 		RotorTypes:  [3]int{enigma.Type1, enigma.Type2, enigma.Type3},
-		RingOffsets: [3]byte{'a', 'a', 'a'},
-		RotorInits:  [3]byte{'a', 'a', 'a'},
+		RingOffsets: [3]byte{'w', 'n', 'm'},
+		RotorInits:  [3]byte{'r', 'a', 'o'},
 	}
 
 	theMachine := enigma.NewMachine(settings)
 
-	//inputText := enigma.Smash("Hello")
-	inputText := enigma.Smash("YQNNW")
+	inputText := enigma.Smash("Hello")
+	inputText = enigma.Smash("QUJJC")
 
 	outputText := make([]byte, 0, len(inputText))
 

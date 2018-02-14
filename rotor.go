@@ -3,12 +3,18 @@ package enigma
 import "fmt"
 
 const (
-	Type1      = 1
-	Type2      = 2
-	Type3      = 3
-	ReflectorB = 5 // The reflector used in the Enigma I B
-	ReflectorC = 6 // Used in Enigma 1 C
-	Echo       = 9
+	// Type1 rotor wheel
+	Type1 = 1
+	// Type2 rotor wheel
+	Type2 = 2
+	// Type3 rotor wheel
+	Type3 = 3
+	// ReflectorB for Model IB
+	ReflectorB = 5
+	// ReflectorC for Model IC
+	ReflectorC = 6
+	// Echo is just a Pass-through
+	Echo = 9
 )
 
 // RotorCiphers contains the substitution cipher for each rotor type
@@ -45,10 +51,9 @@ func NewRotor(rotorType int, alphaRingSetting, rotorInitPosition byte) *Rotor {
 
 // Accounts for the static ring setting and current position to provide a lookup index
 // for the substitution.
-func (r *Rotor) offsetAndPosPre(inByte byte) int {
+func (r *Rotor) doRotorPrework(inByte byte) int {
 	// Remove the ASCII offest for the ring and rotor math
 	lutIdx := int(inByte - 97)
-	return lutIdx
 
 	// Account for the static ring setting
 	lutIdx = lutIdx - r.AlphaRingOffset
@@ -58,14 +63,17 @@ func (r *Rotor) offsetAndPosPre(inByte byte) int {
 	// Now, account for the position of the rotor
 	lutIdx = (lutIdx + (int(r.Position) - 97)) % 26
 
+	// Note that we leave the ASCII off.  This is because the result of this is used for a lookup
+
 	return lutIdx
 }
 
 // Re-Accounts for the static ring setting and current position to provide the output byte
-func (r *Rotor) offsetAndPosPost(outByte byte) byte {
-	return outByte
-	// Re-account for the rotor position
+func (r *Rotor) doRotorPostwork(outByte byte) byte {
+	// Strip off the ASCII for the math.
 	outByte = outByte - 97
+
+	// Re-account for the rotor position
 	outByte = outByte - (r.Position - 97)
 	if outByte < 0 {
 		outByte = outByte + 26
@@ -73,6 +81,8 @@ func (r *Rotor) offsetAndPosPost(outByte byte) byte {
 
 	// Re-account for the ring setting
 	outByte = (outByte + byte(r.AlphaRingOffset)) % 26
+
+	// Re-add the ASCII
 	outByte = outByte + 97
 	return outByte
 }
@@ -90,7 +100,7 @@ func (r *Rotor) Enc(inByte byte) byte {
 	}
 
 	// Account for the ring setting and rotor position
-	lutIdx := r.offsetAndPosPre(inByte)
+	lutIdx := r.doRotorPrework(inByte)
 	fmt.Printf("LutIdx: %v -> ", lutIdx)
 
 	// Do the substitution
@@ -98,7 +108,7 @@ func (r *Rotor) Enc(inByte byte) byte {
 	fmt.Printf("OutByte: %v (%v) -> ", outByte, string(outByte))
 
 	// Un-account for the ring setting and rotor position
-	outByte = r.offsetAndPosPost(outByte)
+	outByte = r.doRotorPostwork(outByte)
 	fmt.Printf("Out: %v (%v)\n", outByte, string(outByte))
 
 	return outByte
@@ -115,7 +125,7 @@ func (r *Rotor) Dec(inByte byte) byte {
 	}
 
 	// Account for the ring setting and rotor position
-	lutIdx := r.offsetAndPosPre(inByte)
+	lutIdx := r.doRotorPrework(inByte)
 	fmt.Printf("LutIdx: %v -> ", lutIdx)
 
 	// Find the index of that byte in the cipher array
@@ -132,7 +142,7 @@ func (r *Rotor) Dec(inByte byte) byte {
 	fmt.Printf("OutByte: %v (%v) -> ", outByte, string(outByte))
 
 	// Un-account for the ring setting and rotor position
-	outByte = r.offsetAndPosPost(outByte)
+	outByte = r.doRotorPostwork(outByte)
 	fmt.Printf("Out: %v (%v)\n", outByte, string(outByte))
 
 	return outByte
