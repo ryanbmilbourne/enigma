@@ -53,9 +53,9 @@ func NewRotor(rotorType int, alphaRingSetting, rotorInitPosition byte) *Rotor {
 
 // Accounts for the static ring setting and current position to provide a lookup index
 // for the substitution.
-func (r *Rotor) doRotorPrework(inByte byte) int {
+func (r *Rotor) doRotorPrework(charNum int) int {
 	// Remove the ASCII offest for the ring and rotor math
-	lutIdx := int(inByte - 97)
+	lutIdx := charNum
 
 	// Account for the static ring setting
 	lutIdx = lutIdx - r.AlphaRingOffset
@@ -63,66 +63,72 @@ func (r *Rotor) doRotorPrework(inByte byte) int {
 		lutIdx = lutIdx + 26
 	}
 	// Now, account for the position of the rotor
-	lutIdx = (lutIdx + (int(r.position) - 97)) % 26
+	pos := int(r.position) - 97
+	lutIdx = (lutIdx + pos) % 26
 
 	// Note that we leave the ASCII off.  This is because the result of this is used for a lookup
 	return lutIdx
 }
 
 // Re-Accounts for the static ring setting and current position to provide the output byte
-func (r *Rotor) doRotorPostwork(outByte byte) byte {
-	// Strip off the ASCII for the math.
-	outByte = outByte - 97
+func (r *Rotor) doRotorPostwork(charNum int) byte {
+	pos := int(r.position) - 97
 
 	// Re-account for the rotor position
-	outByte = outByte - (r.position - 97)
-	if outByte < 0 {
-		outByte = outByte + 26
+	charNum = charNum - pos
+	if charNum < 0 {
+		charNum = charNum + 26
 	}
 
 	// Re-account for the ring setting
-	outByte = (outByte + byte(r.AlphaRingOffset)) % 26
+	//outByte = (outByte + byte(r.AlphaRingOffset)) % 26
+	charNum = (charNum + r.AlphaRingOffset) % 26
 
 	// Re-add the ASCII
-	outByte = outByte + 97
-	return outByte
+	//outByte = outByte + 97
+	charNum = charNum + 97
+	return byte(charNum)
 }
 
 // Enc maps a character through the rotor that is directionally headed **towards** the reflector.
 func (r *Rotor) Enc(inByte byte) byte {
+	charNum := int(inByte) - 97
+
 	fmt.Printf("Type: %v ... ", r.Type)
-	fmt.Printf("In: %v (%v) -> ", inByte, string(inByte))
+	fmt.Printf("In: %v -> ", string(inByte))
 
 	// reflectors don't have ring settings or rotor positions
 	if r.Type == ReflectorC {
-		outByte := RotorCiphers[ReflectorC][inByte-97]
-		fmt.Printf("Out: %v (%v)\n", outByte, string(outByte))
+		outByte := RotorCiphers[ReflectorC][charNum]
+		fmt.Printf("Out: %v\n", string(outByte))
 		return outByte
 	}
 
 	// Account for the ring setting and rotor position
-	lutIdx := r.doRotorPrework(inByte)
-	fmt.Printf("LutIdx: %v -> ", lutIdx)
+	lutIdx := r.doRotorPrework(charNum)
+	//fmt.Printf("LutIdx: %v -> ", lutIdx)
 
 	// Do the substitution
 	outByte := RotorCiphers[r.Type][lutIdx]
-	fmt.Printf("OutByte: %v (%v) -> ", outByte, string(outByte))
+	outCharNum := int(outByte) - 97
+	//fmt.Printf("OutByte: %v (%v) -> ", outByte, string(outByte))
 
 	// Un-account for the ring setting and rotor position
-	outByte = r.doRotorPostwork(outByte)
-	fmt.Printf("Out: %v (%v)\n", outByte, string(outByte))
+	outByte = r.doRotorPostwork(outCharNum)
+	fmt.Printf("Out: %v\n", string(outByte))
 
 	return outByte
 }
 
 // Dec maps a character through the rotor that is directionally headed **back from** the reflector.
 func (r *Rotor) Dec(inByte byte) byte {
+	charNum := int(inByte) - 97
 	fmt.Printf("Type: %v ... ", r.Type)
-	fmt.Printf("In: %v (%v) -> ", inByte, string(inByte))
+	fmt.Printf("In: %v -> ", string(inByte))
 
 	// Account for the ring setting and rotor position
-	lutIdx := r.doRotorPrework(inByte)
-	fmt.Printf("LutIdx: %v -> ", lutIdx)
+	lutIdx := r.doRotorPrework(charNum)
+	//fmt.Printf("LutIdx: %v -> ", lutIdx)
 
 	// Find the index of that byte in the cipher array
 	foundIdx := 0
@@ -133,13 +139,14 @@ func (r *Rotor) Dec(inByte byte) byte {
 		}
 	}
 
-	outByte := byte(foundIdx + 97)
+	//outByte := byte(foundIdx + 97)
 
-	fmt.Printf("OutByte: %v (%v) -> ", outByte, string(outByte))
+	//fmt.Printf("OutByte: %v (%v) -> ", outByte, string(outByte))
 
 	// Un-account for the ring setting and rotor position
-	outByte = r.doRotorPostwork(outByte)
-	fmt.Printf("Out: %v (%v)\n", outByte, string(outByte))
+	//outByte := r.doRotorPostwork(outByte)
+	outByte := r.doRotorPostwork(foundIdx)
+	fmt.Printf("Out: %v\n", string(outByte))
 
 	return outByte
 }

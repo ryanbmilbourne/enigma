@@ -13,7 +13,7 @@ func main() {
 	theMachine := enigma.NewMachine(settings)
 
 	inputText := enigma.Smash("Hello")
-	//inputText = enigma.Smash("BJUFI")
+	inputText = enigma.Smash("KYRJR")
 
 	outputText := make([]byte, 0, len(inputText))
 
