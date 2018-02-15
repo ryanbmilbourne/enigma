@@ -23,14 +23,18 @@ func NewPlugBoard(settings Settings) *PlugBoard {
 
 // Use the plugboard to transform a letter to the other side of its "plug"
 func (p *PlugBoard) Transform(inByte byte) byte {
+	fmt.Printf("Plugboard: %v -> ", string(inByte))
 	// Are there any plugs...plugged in?
 	if p.transforms == nil {
+		fmt.Printf("%v\n", string(inByte))
 		return inByte
 	}
 	// If there's a transformation mapped, use it.  Else return the original value
 	if val, ok := p.transforms[inByte]; ok {
+		fmt.Printf("%v\n", string(val))
 		return val
 	}
+	fmt.Printf("%v\n", string(inByte))
 	return inByte
 }
 

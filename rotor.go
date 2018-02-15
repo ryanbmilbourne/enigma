@@ -81,11 +81,9 @@ func (r *Rotor) doRotorPostwork(charNum int) byte {
 	}
 
 	// Re-account for the ring setting
-	//outByte = (outByte + byte(r.AlphaRingOffset)) % 26
 	charNum = (charNum + r.AlphaRingOffset) % 26
 
 	// Re-add the ASCII
-	//outByte = outByte + 97
 	charNum = charNum + 97
 	return byte(charNum)
 }
@@ -106,12 +104,10 @@ func (r *Rotor) Enc(inByte byte) byte {
 
 	// Account for the ring setting and rotor position
 	lutIdx := r.doRotorPrework(charNum)
-	//fmt.Printf("LutIdx: %v -> ", lutIdx)
 
 	// Do the substitution
 	outByte := RotorCiphers[r.Type][lutIdx]
 	outCharNum := int(outByte) - 97
-	//fmt.Printf("OutByte: %v (%v) -> ", outByte, string(outByte))
 
 	// Un-account for the ring setting and rotor position
 	outByte = r.doRotorPostwork(outCharNum)
@@ -128,7 +124,6 @@ func (r *Rotor) Dec(inByte byte) byte {
 
 	// Account for the ring setting and rotor position
 	lutIdx := r.doRotorPrework(charNum)
-	//fmt.Printf("LutIdx: %v -> ", lutIdx)
 
 	// Find the index of that byte in the cipher array
 	foundIdx := 0
@@ -139,12 +134,7 @@ func (r *Rotor) Dec(inByte byte) byte {
 		}
 	}
 
-	//outByte := byte(foundIdx + 97)
-
-	//fmt.Printf("OutByte: %v (%v) -> ", outByte, string(outByte))
-
 	// Un-account for the ring setting and rotor position
-	//outByte := r.doRotorPostwork(outByte)
 	outByte := r.doRotorPostwork(foundIdx)
 	fmt.Printf("Out: %v\n", string(outByte))
 

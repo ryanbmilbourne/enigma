@@ -27,9 +27,13 @@ func (m *Machine) Map(inByte byte) (byte, error) {
 		return 0, errors.New("Character must be a-z, lowercase")
 	}
 
+	// Pass through the Plugboard. There...
 	val := m.PlugBoard.Transform(inByte)
 
 	val = m.Rotors.Map(val)
+
+	// ...and back again.
+	val = m.PlugBoard.Transform(val)
 
 	return val - 32, nil //Convert to upper-case to signify encrypted
 }

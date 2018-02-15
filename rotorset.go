@@ -50,8 +50,12 @@ func (r *RotorSet) Map(inByte byte) byte {
 	fmt.Println("LEFT")
 	val = r.leftRotor.Enc(val)
 
+	fmt.Println("-------------------------------")
 	fmt.Println("REFLECTOR")
+	fmt.Printf("Type: %v ... ", ReflectorC)
+	fmt.Printf("In: %v -> ", string(val))
 	val = RotorCiphers[r.refRotor.Type][val-97]
+	fmt.Printf("Out: %v\n", string(val))
 
 	fmt.Println("-------------------------------")
 

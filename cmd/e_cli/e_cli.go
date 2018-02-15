@@ -84,5 +84,5 @@ func main() {
 		outputText = append(outputText, out)
 	}
 
-	fmt.Printf("%v -> %v\n", string(inputText), string(outputText))
+	fmt.Printf("\n%v ->\n%v\n", string(inputText), string(outputText))
 }
