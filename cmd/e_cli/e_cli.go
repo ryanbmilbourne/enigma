@@ -43,6 +43,8 @@ func main() {
 
 	initMachine := enigma.NewMachine(settings)
 
+	fmt.Println("====================\nEncoding Key!\n====================")
+
 	keyText := enigma.Smash(key)
 	encKey := make([]byte, 0)
 	for _, b := range keyText {
@@ -53,7 +55,7 @@ func main() {
 		encKey = append(encKey, out)
 	}
 
-	fmt.Printf("ENC KEY: %s\n", encKey)
+	fmt.Printf("Encrypted Key: %s\n\n\n\n", encKey)
 	inputKey := enigma.Smash(string(encKey))
 	var keyArr [3]byte
 	for i := 0; i < 2; i++ {
@@ -70,6 +72,8 @@ func main() {
 
 	inputText := enigma.Smash(message)
 	//inputText = enigma.Smash("KYRJR")
+
+	fmt.Println("====================\nEncoding Message!\n====================")
 
 	outputText := make([]byte, 0, len(message))
 	for _, b := range inputText {
