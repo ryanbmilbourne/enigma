@@ -31,7 +31,16 @@ func NewRotorSet(settings Settings) *RotorSet {
 
 // Map Passes a letter through the rotor set
 func (r *RotorSet) Map(inByte byte) byte {
-	// TODO: Rototate the rotor wheels
+	fmt.Println("==========================================")
+
+	r.turnRotors()
+
+	// Before doing anything, turn the rotors
+	fmt.Printf("Rotor states: (%v%v%v)\n",
+		string(r.leftRotor.GetPosition()),
+		string(r.middleRotor.GetPosition()),
+		string(r.rightRotor.GetPosition()),
+	)
 
 	// First Pass
 	fmt.Println("RIGHT")
@@ -40,8 +49,9 @@ func (r *RotorSet) Map(inByte byte) byte {
 	val = r.middleRotor.Enc(val)
 	fmt.Println("LEFT")
 	val = r.leftRotor.Enc(val)
-	fmt.Println("REFLECT")
-	val = r.refRotor.Enc(val)
+
+	fmt.Println("REFLECTOR")
+	val = RotorCiphers[r.refRotor.Type][val-97]
 
 	fmt.Println("-------------------------------")
 
@@ -54,4 +64,23 @@ func (r *RotorSet) Map(inByte byte) byte {
 	val = r.rightRotor.Dec(val)
 	fmt.Println("==========================================")
 	return val
+}
+
+// RotateRotors turns the rotors in the set, turning over as needed.
+func (r *RotorSet) turnRotors() {
+	if r.rightRotor.GetPosition() == Turnovers[r.rightRotor.Type] {
+		// Right rotor has turnedover, so we need to rotate the middle rotor
+		if r.middleRotor.GetPosition() == Turnovers[r.middleRotor.Type] {
+			// Middle rotor also turned, so rotate the left rotor.
+			r.leftRotor.Rotate()
+		}
+		r.middleRotor.Rotate()
+	} else {
+		// Account for the double stepping of the middle rotor.
+		if r.middleRotor.GetPosition() == Turnovers[r.middleRotor.Type] {
+			r.middleRotor.Rotate()
+			r.leftRotor.Rotate()
+		}
+	}
+	r.rightRotor.Rotate()
 }

@@ -16,6 +16,13 @@ type Settings struct {
 	RotorInits  [3]byte   // Initial Alpha settings for the rotor wheel. Dynamic.
 }
 
+// Turnovers notes the char at which each rotor type turns over
+var Turnovers = map[int]byte{
+	Type1: 'q',
+	Type2: 'e',
+	Type3: 'v',
+}
+
 // CheckByte Checks if a byte is valid input (lowercase alpha)
 func CheckByte(inByte byte) error {
 	if inByte < 97 || inByte > 122 {

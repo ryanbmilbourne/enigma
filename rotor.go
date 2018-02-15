@@ -23,15 +23,16 @@ var RotorCiphers = map[int][]byte{
 	Type2:      []byte("ajdksiruxblhwtmcqgznpyfvoe"),
 	Type3:      []byte("bdfhjlcprtxvznyeiwgakmusqo"),
 	ReflectorC: []byte("fvpjiaoyedrzxwgctkuqsbnmhl"),
-	Echo:       []byte(Alphabet),
+	Echo:       Alphabet,
 }
 
 // Rotor represents an Enigma rotor assembly
 type Rotor struct {
-	Type            int
-	substitutions   []byte
-	AlphaRingOffset int
-	Position        byte
+	Type             int
+	substitutions    []byte
+	AlphaRingOffset  int
+	AlphaRingSetting byte
+	position         byte
 }
 
 // NewRotor initializes a new rotor using the given type (I,II,III, Echo, or Reflector)
@@ -42,9 +43,10 @@ func NewRotor(rotorType int, alphaRingSetting, rotorInitPosition byte) *Rotor {
 
 	rotor.substitutions = RotorCiphers[rotorType]
 
-	rotor.AlphaRingOffset = int(alphaRingSetting - 'a')
+	rotor.AlphaRingOffset = int(alphaRingSetting) - 97
+	rotor.AlphaRingSetting = alphaRingSetting
 
-	rotor.Position = rotorInitPosition
+	rotor.position = rotorInitPosition
 
 	return &rotor
 }
@@ -61,10 +63,9 @@ func (r *Rotor) doRotorPrework(inByte byte) int {
 		lutIdx = lutIdx + 26
 	}
 	// Now, account for the position of the rotor
-	lutIdx = (lutIdx + (int(r.Position) - 97)) % 26
+	lutIdx = (lutIdx + (int(r.position) - 97)) % 26
 
 	// Note that we leave the ASCII off.  This is because the result of this is used for a lookup
-
 	return lutIdx
 }
 
@@ -74,7 +75,7 @@ func (r *Rotor) doRotorPostwork(outByte byte) byte {
 	outByte = outByte - 97
 
 	// Re-account for the rotor position
-	outByte = outByte - (r.Position - 97)
+	outByte = outByte - (r.position - 97)
 	if outByte < 0 {
 		outByte = outByte + 26
 	}
@@ -119,11 +120,6 @@ func (r *Rotor) Dec(inByte byte) byte {
 	fmt.Printf("Type: %v ... ", r.Type)
 	fmt.Printf("In: %v (%v) -> ", inByte, string(inByte))
 
-	// reflectors don't have ring settings or rotor positions
-	if r.Type == ReflectorC {
-		return 0
-	}
-
 	// Account for the ring setting and rotor position
 	lutIdx := r.doRotorPrework(inByte)
 	fmt.Printf("LutIdx: %v -> ", lutIdx)
@@ -146,4 +142,17 @@ func (r *Rotor) Dec(inByte byte) byte {
 	fmt.Printf("Out: %v (%v)\n", outByte, string(outByte))
 
 	return outByte
+}
+
+// Rotate advances the position of the Rotor by one step.
+// Return true if the rotor has reached its turnover point.
+// Each rotor type has a different notch turnover point.
+func (r *Rotor) Rotate() {
+	// ASCII so fun
+	r.position = ((r.position + 1 - 97) % 26) + 97
+}
+
+// GetPosition returns the current position of the rotor wheel.
+func (r *Rotor) GetPosition() byte {
+	return r.position
 }
